@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Трекер привычек</title>
+<style>
+:root {
+  --bg: #cce2f7;
+  --card: #e29898;
+  --text: #081124;
+  --text-muted: #718096;
+  --border: #a4c0e4;
+  --primary: #3a9ef0;
+  --primary-dark: #2b6cb0;
+  --primary-light: #cfe6f1;
+  --accent: #3fb470;
+  --accent-light: #9ed4ad;
+  --danger: #ee6f6f;
+  --danger-light: #ddb1b1;
+  --warning: #8f490f;
+  --gold: #f3a405;
+  --radius: 14px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 30px rgba(10, 9, 9, 0.1);
+  --shadow-glow: 0 4px 15px rgba(11, 187, 84, 0.25);
+}
+[data-theme="dark"] {
+  --bg: #192233;
+  --card: #2d3748;
+  --text: #cbdcf1;
+  --text-muted: #a0aec0;
+  --border: #4a5568;
+  --primary: #63b3ed;
+  --primary-dark: #4299e1;
+  --primary-light: #2a4365;
+  --accent: #68d391;
+  --accent-light: #1c4532;
+  --danger: #fc8181;
+  --danger-light: #3d272b;
+  --warning: #f6ad55;
+  --gold: #ecc94b;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.4);
+  --shadow-glow: 0 4px 15px rgba(104,211,145,0.2);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 72px;
+  transition: background 0.3s, color 0.3s;
+}
+.hidden { display: none !important; }
+.theme-toggle {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 40px; height: 40px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.theme-toggle:hover { transform: scale(1.08); }
+#auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.auth-card {
+  background: var(--card);
+  padding: 36px 30px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-width: 380px;
+  width: 100%;
+}
+.auth-card h1 {
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+  text-align: center;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.auth-card .subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+}
+.auth-card .slogan {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--accent);
+  margin-bottom: 24px;
+  font-style: italic;
+}
+.auth-card input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  background: var(--bg);
+  color: var(--text);
+}
+.auth-card input:focus { outline: none; border-color: var(--primary); }
+.auth-card button {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: rgb(243, 227, 227);
+  font-weight: 600;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-glow); }
+.btn-secondary {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+.btn-danger {
+  background: var(--danger);
+  color: rgb(235, 207, 207);
+  font-weight: 600;
+}
+.auth-toggle {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+.auth-toggle span {
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 700;
+}
+.auth-error {
+  color: var(--danger);
+  font-size: 0.82rem;
+  text-align: center;
+  margin-bottom: 12px;
+  min-height: 1.2em;
+}
+#app { max-width: 620px; margin: 0 auto; padding: 16px; }
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.app-header h2 { font-size: 1.35rem; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.user-badge {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logout-btn {
+  background: none;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+.logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+/* Нижняя навигационная панель */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  z-index: 100;
+  max-width: 620px;
+  margin: 0 auto;
+}
+.nav-btn {
+  background: none; border: none;
+  padding: 8px 18px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: color 0.2s;
+}
+.nav-btn.active { color: var(--primary); font-weight: 700; }
+.nav-icon { font-size: 1.3rem; }
+/* Экраны */
+.screen { display: none; }
+.screen.active { display: block; }
+/* Сегодня */
+.today-date {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.slogan-of-day {
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--accent);
+  font-style: italic;
+  margin-bottom: 16px;
+  padding: 0 10px;
+  line-height: 1.5;
+}
+.habit-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.habit-card:hover { box-shadow: var(--shadow-lg); }
+.habit-card:active { transform: scale(0.98); }
+.habit-color-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.habit-card-body { flex: 1; }
+.habit-name {
+  font-weight: 700;
+  font-size: 0.96rem;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.habit-meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.streak-current { background: #ebeb05; color: #c2520c; }
+[data-theme="dark"] .streak-current { background: #3f282b; color: #f1982a; }
+.streak-best { background: #9daee5; color: #463fac; }
+[data-theme="dark"] .streak-best { background: #22204e; color: #bcc4e6; }
+.check-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  transition: all 0.25s;
+}
+.check-btn.checked {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: rgb(243, 204, 204);
+  box-shadow: var(--shadow-glow);
+}
+.check-btn:hover { border-color: var(--accent); }
+.empty-state {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--text-muted);
+}
+.empty-state .emoji { font-size: 2.5rem; margin-bottom: 12px; }
+/* Наградной баннер */
+.reward-banner {
+  background: linear-gradient(135deg, #cec5a3, #b19a66);
+  border: 1px solid #e2b13555;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  animation: slideIn 0.4s ease;
+}
+[data-theme="dark"] .reward-banner {
+  background: linear-gradient(135deg, #55363b, #4a3828);
+  border: 1px solid #b7791f55;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.reward-banner .medal { font-size: 2rem; animation: bounce 1s ease infinite alternate; }
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
+}
+.reward-banner .text { flex: 1; }
+.reward-banner .title { font-weight: 800; font-size: 0.92rem; color: #92400e; }
+[data-theme="dark"] .reward-banner .title { color: #f6ad55; }
+.reward-banner .desc { font-size: 0.8rem; color: #a16207; margin-top: 2px; }
+[data-theme="dark"] .reward-banner .desc { color: #d69e2e; }
+/* Значок достижения */
+.achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.achievement-badge.gold { background: #fef3c7; color: #92400e; }
+.achievement-badge.silver { background: #e2e8f0; color: #4a5568; }
+.achievement-badge.bronze { background: #fed7aa; color: #9a6223; }
+[data-theme="dark"] .achievement-badge.gold { background: #55363b; color: #f6ad55; }
+[data-theme="dark"] .achievement-badge.silver { background: #4a5568; color: #cbd5e0; }
+[data-theme="dark"] .achievement-badge.bronze { background: #55363b; color: #ed8936; }
+/* История */
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.month-nav { display: flex; align-items: center; gap: 14px; }
+.month-nav button {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text);
+  transition: all 0.2s;
+}
+.month-nav button:hover { border-color: var(--primary); }
+.month-nav .current-month {
+  font-weight: 700;
+  font-size: 0.98rem;
+  min-width: 150px;
+  text-align: center;
+}
+.habit-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  padding-bottom: 4px;
+}
+.habit-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--text);
+  transition: all 0.2s;
+}
+.habit-chip.active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(72,187,120,0.15);
+}
+.habit-chip .dot { width: 11px; height: 11px; border-radius: 50%; }
+.month-stats {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.month-stats .pct {
+  font-size: 1.6rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.month-stats .label { font-size: 0.82rem; color: var(--text-muted); }
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  background: var(--card);
+  padding: 14px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.day-header {
+  text-align: center;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  padding: 4px 0;
+  font-weight: 600;
+}
+.day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  font-size: 0.84rem;
+  color: var(--text);
+  background: var(--bg);
+  user-select: none;
+  transition: all 0.15s;
+}
+.day:hover { transform: scale(1.05); }
+.day.empty { background: transparent; cursor: default; }
+.day.empty:hover { transform: none; }
+.day.today { border: 2px solid var(--primary); font-weight: 700; }
+.day.completed { color: white; font-weight: 700; }
+.day.has-note::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px; height: 5px;
+  background: #6366f1;
+  border-radius: 50%;
+}
+.day.completed.has-note::after { background: rgba(255,255,255,0.8); }
+.day.future { opacity: 0.4; }
+.day.note-only { border: 1px dashed #6366f1; }
+/* Список привычек */
+.habit-list-item {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 15px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.habit-list-item:hover { box-shadow: var(--shadow-lg); }
+.habit-list-item:active { transform: scale(0.98); }
+.habit-list-item .info { flex: 1; }
+.habit-list-item .name { font-weight: 700; font-size: 0.94rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.habit-list-item .freq { font-size: 0.76rem; color: var(--text-muted); margin-top: 3px; }
+.habit-list-item .reminder { font-size: 0.76rem; color: var(--accent); }
+.archived-section { margin-top: 24px; }
+.archived-section h3 { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px; }
+.add-habit-fab {
+  position: fixed;
+  bottom: 84px;
+  right: 50%;
+  transform: translateX(310px);
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #38a169);
+  color: white;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-glow);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.add-habit-fab:hover { transform: translateX(310px) scale(1.1); }
+@media (max-width: 620px) {
+  .add-habit-fab { right: 16px; transform: none; }
+  .add-habit-fab:hover { transform: scale(1.1); }
+}
+/* Детали */
+.detail-back {
+  background: none; border: none;
+  font-size: 0.92rem;
+  color: var(--primary);
+  cursor: pointer;
+  margin-bottom: 16px;
+  padding: 0;
+  font-weight: 600;
+}
+.detail-back:hover { text-decoration: underline; }
+.detail-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  margin-bottom: 16px;
+}
+.detail-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.detail-meta {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+  line-height: 1.6;
+}
+.detail-stats { display: flex; gap: 16px; margin-bottom: 18px; }
+.detail-stat {
+  flex: 1;
+  text-align: center;
+  background: var(--primary-light);
+  border-radius: 12px;
+  padding: 14px;
+}
+.detail-stat .num { font-size: 1.8rem; font-weight: 800; }
+.detail-stat .lbl { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+.detail-stat .num.gold { color: var(--gold); }
+.detail-stat .num.purple { color: #805ad5; }
+[data-theme="dark"] .detail-stat .num.purple { color: #b794f4; }
+.detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.detail-actions button {
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: var(--text);
+  transition: all 0.2s;
+}
+.detail-actions button:hover { box-shadow: var(--shadow); }
+.detail-actions .archive-btn { background: #fef3c7; border-color: #fde68a; color: #92400e; }
+[data-theme="dark"] .detail-actions .archive-btn { background: #55363b; border-color: #927428; color: #f6ad55; }
+.detail-actions .delete-btn { background: var(--danger-light); border-color: var(--danger); color: var(--danger); }
+.detail-notes h4 { font-size: 0.94rem; margin-bottom: 6px; }
+.note-hint { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; }
+.note-item {
+  background: var(--primary-light);
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin-bottom: 8px;
+}
+.note-item .date { font-size: 0.76rem; color: var(--text-muted); margin-bottom: 5px; font-weight: 600; }
+.note-item .text { font-size: 0.88rem; line-height: 1.4; }
+.modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.modal-content {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 26px 22px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+.modal-content h3 { font-size: 1.15rem; margin-bottom: 18px; }
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+.form-group input[type="text"],
+.form-group input[type="time"],
+.form-group input[type="number"],
+.form-group textarea {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.94rem;
+  background: var(--bg);
+  color: var(--text);
+}
+.form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+.form-group textarea { resize: vertical; min-height: 80px; }
+.freq-options { display: flex; gap: 6px; flex-wrap: wrap; }
+.freq-option {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  background: var(--card);
+  color: var(--text);
+  transition: all 0.2s;
+}
+.freq-option.active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  font-weight: 700;
+}
+.weekday-picker { display: flex; gap: 5px; margin-top: 10px; }
+.weekday-btn {
+  width: 40px; height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text);
+  transition: all 0.2s;
+}
+.weekday-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+}
+.color-picker { display: flex; gap: 10px; flex-wrap: wrap; }
+.color-swatch {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.2s;
+}
+.color-swatch:hover { transform: scale(1.12); }
+.color-swatch.active { border-color: var(--card); box-shadow: 0 0 0 2px var(--text); }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.94rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.note-date-display {
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+  font-size: 0.92rem;
+}
+/* Поздравления */
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 28px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+.toast.reward {
+  background: linear-gradient(135deg, #ed8936, #d69e2e);
+  font-weight: 700;
+}
+/* Конфетти */
+.confetti-piece {
+  position: fixed;
+  width: 8px; height: 8px;
+  z-index: 3000;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+<!-- Экран авторизации -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <h1>Трекер привычек</h1>
+    <p class="subtitle">Не позволяй вчерашнему дню занимать слишком много места в сегодняшнем</p>
+    <p class="slogan" id="auth-slogan"></p>
+    <div class="auth-error" id="auth-error"></div>
+    <input type="email" id="auth-email" placeholder="Электронная почта">
+    <input type="password" id="auth-password" placeholder="Пароль">
+    <button class="btn-primary" id="auth-submit">Войти</button>
+    <button class="btn-secondary" id="auth-toggle-btn">Создать аккаунт</button>
+    <p class="auth-toggle" id="auth-mode-text">Нет аккаунта? <span id="auth-switch">Зарегистрироваться</span></p>
+  </div>
+</div>
+<div id="app" class="hidden">
+  <div class="app-header">
+    <h2 id="screen-title">Сегодня</h2>
+    <div class="header-right">
+      <button class="theme-toggle" id="theme-toggle" title="Сменить тему">&#9681;</button>
+      <div class="user-badge">
+        <span id="user-email"></span>
+        <button class="logout-btn" id="logout-btn">Выйти</button>
+      </div>
+    </div>
+  </div>
+  <div class="screen active" id="screen-today">
+    <div class="today-date" id="today-date"></div>
+    <div class="slogan-of-day" id="slogan-today"></div>
+    <div id="reward-banner-container"></div>
+    <div id="today-habits"></div>
+  </div>
+  <div class="screen" id="screen-history">
+    <div class="history-header">
+      <div class="month-nav">
+        <button id="prev-month">&larr;</button>
+        <span class="current-month" id="current-month"></span>
+        <button id="next-month">&rarr;</button>
+      </div>
+    </div>
+    <div class="habit-chips" id="habit-chips"></div>
+    <div class="month-stats">
+      <span class="label">Выполнение за месяц</span>
+      <span class="pct" id="month-pct">0%</span>
+    </div>
+    <div class="calendar-grid" id="calendar-grid"></div>
+  </div>
+  <div class="screen" id="screen-habits">
+    <div id="active-habits-list"></div>
+    <div class="archived-section hidden" id="archived-section">
+      <h3>Архив</h3>
+      <div id="archived-habits-list"></div>
+    </div>
+  </div>
+  <div class="screen" id="screen-detail">
+    <button class="detail-back" id="detail-back">&larr; Назад</button>
+    <div id="detail-content"></div>
+  </div>
+  <button class="add-habit-fab" id="add-habit-fab">+</button>
+</div>
+<div class="bottom-nav hidden" id="bottom-nav">
+  <button class="nav-btn active" data-screen="today"><span class="nav-icon">&#9737;</span>Сегодня</button>
+  <button class="nav-btn" data-screen="history"><span class="nav-icon">&#9638;</span>История</button>
+  <button class="nav-btn" data-screen="habits"><span class="nav-icon">&#9776;</span>Привычки</button>
+</div>
+<div class="modal hidden" id="habit-modal">
+  <div class="modal-content">
+    <h3 id="habit-modal-title">Новая привычка</h3>
+    <div class="form-group">
+      <label>Название</label>
+      <input type="text" id="habit-name" placeholder="Читать 20 минут">
+    </div>
+    <div class="form-group">
+      <label>Цвет</label>
+      <div class="color-picker" id="color-picker"></div>
+    </div>
+    <div class="form-group">
+      <label>Периодичность</label>
+      <div class="freq-options" id="freq-options">
+        <div class="freq-option active" data-freq="daily">Каждый день</div>
+        <div class="freq-option" data-freq="weekdays">Дни недели</div>
+        <div class="freq-option" data-freq="times_week">N раз в неделю</div>
+      </div>
+      <div class="weekday-picker hidden" id="weekday-picker"></div>
+      <div class="form-group hidden" id="times-week-input" style="margin-top:10px;">
+        <input type="number" id="times-per-week" min="1" max="7" value="3" style="width:80px;">
+        <span style="font-size:0.82rem;color:var(--text-muted);margin-left:8px;">раз в неделю</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Напоминание</label>
+      <input type="time" id="habit-reminder">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="habit-cancel">Отмена</button>
+      <button class="btn-primary" id="habit-save">Сохранить</button>
+    </div>
+  </div>
+</div>
+<div class="modal hidden" id="note-modal">
+  <div class="modal-content">
+    <h3>Заметка</h3>
+    <div class="note-date-display" id="note-date-display"></div>
+    <div class="form-group">
+      <textarea id="note-text" placeholder="Что хочется записать?"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="note-cancel">Отмена</button>
+      <button class="btn-primary" id="note-save">Сохранить</button>
+    </div>
+  </div>
+</div>
+<div class="modal hidden" id="confirm-modal">
+  <div class="modal-content">
+    <h3 id="confirm-title">Подтвердите</h3>
+    <p style="font-size:0.9rem;margin-bottom:18px;line-height:1.5;" id="confirm-text"></p>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="confirm-cancel">Отмена</button>
+      <button class="btn-danger" id="confirm-ok">Удалить</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let currentUser = null;
+let isLoginMode = true;
+let editingHabitId = null;
+let selectedFreq = 'daily';
+let selectedColor = '#48bb78';
+let selectedDays = [];
+let historyYear, historyMonth;
+let activeHistoryHabitId = null;
+let noteContext = { habitId: null, date: null };
+let confirmCallback = null;
+let toastTimer = null;
+const COLORS = [
+  '#48bb78', '#4299e1', '#ed8936', '#f56565',
+  '#9f7aea', '#38b2ac', '#ecc94b', '#e53e3e',
+  '#667eea', '#d53f8c'
+];
+const SLOGANS = [
+  '«Дисциплина — это мост между целями и достижениями»',
+  '«Маленькие шаги ведут к большим переменам»',
+  '«Лучшая инвестиция — это инвестиция в себя»',
+  '«Постоянство важнее интенсивности»',
+  '«Постановка целей — это первый шаг к превращению невидимого в видимое»',
+  '«Привычка — фундамент характера»',
+  '«Неудача — это просто возможность начать заново, но уже более мудро»',
+  '«Успех — это сумма маленьких усилий, повторяемых изо дня в день»',
+  '«Мечты станут реальностью, когда мысли превращаются в действия»',
+  '«Нет такого слова „не могу“, есть только „позже“»'
+];
+const ACHIEVEMENT_TIERS = [
+  { days: 7,   medal: '🥉', label: 'Бронза',   cls: 'bronze', msg: 'Неделя — отличное начало!' },
+  { days: 14,  medal: '🥈', label: 'Серебро',  cls: 'silver', msg: 'Две недели — ты в деле!' },
+  { days: 30,  medal: '🥇', label: 'Золото',    cls: 'gold',   msg: 'Месяц — серьёзный результат!' },
+  { days: 50,  medal: '🏆', label: 'Чемпион',  cls: 'gold',   msg: '50 дней — настоящая стойкость!' },
+  { days: 100, medal: '💎', label: 'Алмаз',    cls: 'gold',   msg: '100 дней — легендарный результат!' }
+];
+const MEDALS_CORRECT = [
+  { days: 7,   medal: '🥉', label: 'Бронза',   cls: 'bronze', msg: 'Неделя — отличное начало!' },
+  { days: 14,  medal: '🥈', label: 'Серебро',  cls: 'silver', msg: 'Две недели — ты в деле!' },
+  { days: 30,  medal: '🥇', label: 'Золото',    cls: 'gold',   msg: 'Месяц — серьёзный результат!' },
+  { days: 50,  medal: '🏆', label: 'Чемпион',  cls: 'gold',   msg: '50 дней — настоящая стойкость!' },
+  { days: 100, medal: '💎', label: 'Алмаз',    cls: 'gold',   msg: '100 дней — легендарный результат!' }
+];
+function getUsers() { return JSON.parse(localStorage.getItem('ht_users') || '[]'); }
+function saveUsers(u) { localStorage.setItem('ht_users', JSON.stringify(u)); }
+function getSession() { return localStorage.getItem('ht_session'); }
+function setSession(e) { localStorage.setItem('ht_session', e); }
+function clearSession() { localStorage.removeItem('ht_session'); }
+function getHabits() { return JSON.parse(localStorage.getItem('ht_habits_' + currentUser) || '[]'); }
+function saveHabits(h) { localStorage.setItem('ht_habits_' + currentUser, JSON.stringify(h)); }
+function getLogs() { return JSON.parse(localStorage.getItem('ht_logs_' + currentUser) || '[]'); }
+function saveLogs(l) { localStorage.setItem('ht_logs_' + currentUser, JSON.stringify(l)); }
+function getNotes() { return JSON.parse(localStorage.getItem('ht_notes_' + currentUser) || '[]'); }
+function saveNotes(n) { localStorage.setItem('ht_notes_' + currentUser, JSON.stringify(n)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+function dateStr(d) { return d.toISOString().split('T')[0]; }
+function todayStr() { return dateStr(new Date()); }
+// ============= тема =============
+function initTheme() {
+  const saved = localStorage.getItem('ht_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('ht_theme', next);
+}
+document.getElementById('theme-toggle').onclick = toggleTheme;
+function initAuth() {
+  initTheme();
+  const session = getSession();
+  if (session) { currentUser = session; showApp(); } else { showAuth(); }
+  document.getElementById('auth-submit').onclick = handleAuth;
+  document.getElementById('auth-toggle-btn').onclick = toggleAuthMode;
+  document.getElementById('auth-switch').onclick = toggleAuthMode;
+  document.getElementById('auth-password').addEventListener('keypress', e => { if (e.key === 'Enter') handleAuth(); });
+  document.getElementById('auth-email').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('auth-password').focus(); });
+  document.getElementById('auth-slogan').textContent = SLOGANS[Math.floor(Math.random() * SLOGANS.length)];
+}
+function toggleAuthMode() {
+  isLoginMode = !isLoginMode;
+  document.getElementById('auth-submit').textContent = isLoginMode ? 'Войти' : 'Зарегистрироваться';
+  document.getElementById('auth-toggle-btn').textContent = isLoginMode ? 'Создать аккаунт' : 'У меня есть аккаунт';
+  document.getElementById('auth-mode-text').innerHTML = isLoginMode
+    ? 'Нет аккаунта? <span id="auth-switch">Зарегистрироваться</span>'
+    : 'Уже зарегистрированы? <span id="auth-switch">Войти</span>';
+  document.getElementById('auth-switch').onclick = toggleAuthMode;
+  document.getElementById('auth-error').textContent = '';
+}
+function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim().toLowerCase();
+  const pass = document.getElementById('auth-password').value;
+  const err = document.getElementById('auth-error');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Заполните все поля'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Неверный формат почты'; return; }
+  const users = getUsers();
+  if (isLoginMode) {
+    const u = users.find(u => u.email === email && u.password === pass);
+    if (!u) { err.textContent = 'Неверная почта или пароль'; return; }
+    currentUser = email; setSession(email); showApp();
+  } else {
+    if (users.find(u => u.email === email)) { err.textContent = 'Аккаунт уже существует'; return; }
+    users.push({ email, password: pass });
+    saveUsers(users); currentUser = email; setSession(email); showApp();
+  }
+}
+function showAuth() {
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('bottom-nav').classList.add('hidden');
+}
+function showApp() {
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('bottom-nav').classList.remove('hidden');
+  document.getElementById('user-email').textContent = currentUser;
+  const now = new Date();
+  historyYear = now.getFullYear();
+  historyMonth = now.getMonth();
+  renderToday();
+}
+document.getElementById('logout-btn').onclick = () => { clearSession(); currentUser = null; showAuth(); };
+// ============= навигация =============
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.onclick = () => {
+    const screen = btn.dataset.screen;
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + screen).classList.add('active');
+    const titles = { today: 'Сегодня', history: 'История', habits: 'Привычки' };
+    document.getElementById('screen-title').textContent = titles[screen] || '';
+    document.getElementById('add-habit-fab').style.display = screen === 'habits' ? 'flex' : 'none';
+    if (screen === 'today') renderToday();
+    if (screen === 'history') renderHistory();
+    if (screen === 'habits') renderHabits();
+  };
+});
+// ============= СЕГОДНЯШНИЙ ЭКРАН =============
+function isHabitScheduledToday(habit) {
+  const today = new Date().getDay();
+  if (habit.frequency.type === 'daily') return true;
+  if (habit.frequency.type === 'weekdays') return habit.frequency.days.includes(today);
+  if (habit.frequency.type === 'times_week') return true;
+  return false;
+}
+function isHabitScheduledOnDate(habit, d) {
+  const dow = d.getDay();
+  if (habit.frequency.type === 'daily') return true;
+  if (habit.frequency.type === 'weekdays') return habit.frequency.days.includes(dow);
+  if (habit.frequency.type === 'times_week') return true;
+  return false;
+}
+function renderToday() {
+  const habits = getHabits().filter(h => !h.archived);
+  const todayHabits = habits.filter(isHabitScheduledToday);
+  const logs = getLogs();
+  const ts = todayStr();
+  const now = new Date();
+  const days = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  document.getElementById('today-date').textContent = `${days[now.getDay()]}, ${now.getDate()} ${now.toLocaleString('ru-RU',{month:'long'})}`;
+  const sloganIdx = now.getDate() % SLOGANS.length;
+  document.getElementById('slogan-today').textContent = SLOGANS[sloganIdx];
+  // Наградной баннер
+  const bannerContainer = document.getElementById('reward-banner-container');
+  bannerContainer.innerHTML = '';
+  let bestAchievement = null;
+  habits.forEach(h => {
+    const streak = calcCurrentStreak(h, logs);
+    for (let i = MEDALS_CORRECT.length - 1; i >= 0; i--) {
+      if (streak >= MEDALS_CORRECT[i].days) {
+        if (!bestAchievement || MEDALS_CORRECT[i].days > bestAchievement.days) {
+          bestAchievement = { ...MEDALS_CORRECT[i], habitName: h.name, streak };
+        }
+        break;
+      }
+    }
+  });
+  if (bestAchievement) {
+    bannerContainer.innerHTML = `
+      <div class="reward-banner">
+        <span class="medal">${bestAchievement.medal}</span>
+        <div class="text">
+          <div class="title">${bestAchievement.label} — ${bestAchievement.streak} дней</div>
+          <div class="desc">${bestAchievement.msg} «${escapeHtml(bestAchievement.habitName)}»</div>
+        </div>
+      </div>`;
+  }
+  const container = document.getElementById('today-habits');
+  if (todayHabits.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="emoji">\u{1F331}</div><p>На сегодня привычек не запланировано</p></div>`;
+    return;
+  }
+  container.innerHTML = todayHabits.map(h => {
+    const isChecked = logs.some(l => l.habitId === h.id && l.date === ts);
+    const streak = calcCurrentStreak(h, logs);
+    const best = calcBestStreak(h, logs);
+    const achievementBadge = getAchievementBadge(streak);
+    return `
+      <div class="habit-card" data-habit-id="${h.id}">
+        <div class="habit-color-dot" style="background:${h.color}"></div>
+        <div class="habit-card-body">
+          <div class="habit-name">${escapeHtml(h.name)} ${achievementBadge}</div>
+          <div class="habit-meta">
+            <span class="streak-badge streak-current">\u{1F525} ${streak}</span>
+            <span class="streak-badge streak-best">\u2605 ${best}</span>
+            ${h.reminder ? `<span>\u23F0 ${h.reminder}</span>` : ''}
+          </div>
+        </div>
+        <button class="check-btn ${isChecked ? 'checked' : ''}" data-check-id="${h.id}">${isChecked ? '\u2713' : ''}</button>
+      </div>`;
+  }).join('');
+  container.querySelectorAll('.check-btn').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); toggleCheck(btn.dataset.checkId); };
+  });
+  container.querySelectorAll('.habit-card').forEach(card => {
+    card.onclick = () => openHabitDetail(card.dataset.habitId);
+  });
+}
+function toggleCheck(habitId) {
+  const logs = getLogs();
+  const ts = todayStr();
+  const idx = logs.findIndex(l => l.habitId === habitId && l.date === ts);
+  if (idx >= 0) {
+    logs.splice(idx, 1);
+    saveLogs(logs);
+    showToast('Отметка снята');
+  } else {
+    logs.push({ habitId, date: ts });
+    saveLogs(logs);
+    showToast('Отмечено! Так держать!', 'reward');
+    // Проверьте наличие новых достижений
+    const habit = getHabits().find(h => h.id === habitId);
+    const streak = calcCurrentStreak(habit, logs);
+    for (let i = MEDALS_CORRECT.length - 1; i >= 0; i--) {
+      if (streak === MEDALS_CORRECT[i].days) {
+        launchConfetti();
+        showToast(`\u{1F3C6} ${MEDALS_CORRECT[i].label}! ${MEDALS_CORRECT[i].msg}`, 'reward');
+        break;
+      }
+    }
+  }
+  renderToday();
+}
+function getAchievementBadge(streak) {
+  for (let i = MEDALS_CORRECT.length - 1; i >= 0; i--) {
+    if (streak >= MEDALS_CORRECT[i].days) {
+      const t = MEDALS_CORRECT[i];
+      return `<span class="achievement-badge ${t.cls}">${t.medal} ${t.label}</span>`;
+    }
+  }
+  return '';
+}
+// ============= РАСЧЕТ ПОЛОСЫ ПРОПУСКОВ =============
+function calcCurrentStreak(habit, logs) {
+  if (habit.frequency.type === 'times_week') return calcWeeklyStreak(habit, logs);
+  return calcDailyStreak(habit, logs);
+}
+function calcDailyStreak(habit, logs) {
+  const today = new Date();
+  let streak = 0;
+  let d = new Date(today);
+  const todayLogged = logs.some(l => l.habitId === habit.id && l.date === dateStr(d));
+  if (!todayLogged) {
+    d.setDate(d.getDate() - 1);
+  } else {
+    streak = 1;
+    d.setDate(d.getDate() - 1);
+  }
+  while (true) {
+    const ds = dateStr(d);
+    const isScheduled = isHabitScheduledOnDate(habit, d);
+    if (!isScheduled) { d.setDate(d.getDate() - 1); continue; }
+    const isLogged = logs.some(l => l.habitId === habit.id && l.date === ds);
+    if (isLogged) { streak++; d.setDate(d.getDate() - 1); }
+    else break;
+    if (streak > 36500) break;
+  }
+  return streak;
+}
+function calcWeeklyStreak(habit, logs) {
+  const N = habit.frequency.times || 1;
+  const now = new Date();
+  let weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const created = new Date(habit.createdAt);
+  const createdWeekStart = new Date(created);
+  createdWeekStart.setDate(createdWeekStart.getDate() - createdWeekStart.getDay());
+  createdWeekStart.setHours(0, 0, 0, 0);
+  let streak = 0;
+  while (weekStart >= createdWeekStart) {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    const count = logs.filter(l => {
+      if (l.habitId !== habit.id) return false;
+      const ld = new Date(l.date + 'T00:00:00');
+      return ld >= weekStart && ld <= weekEnd;
+    }).length;
+    const isCurrentWeek = weekStart.getTime() === getWeekStart(now).getTime();
+    const weekFullyPassed = weekEnd < now;
+    if (isCurrentWeek) {
+      if (count >= N) streak++;
+    } else {
+      if (count >= N) streak++;
+      else break;
+    }
+    weekStart.setDate(weekStart.getDate() - 7);
+  }
+  return streak;
+}
+function getWeekStart(d) {
+  const ws = new Date(d);
+  ws.setDate(ws.getDate() - ws.getDay());
+  ws.setHours(0, 0, 0, 0);
+  return ws;
+}
+function calcBestStreak(habit, logs) {
+  if (habit.frequency.type === 'times_week') {
+    const N = habit.frequency.times || 1;
+    const created = new Date(habit.createdAt);
+    let weekStart = getWeekStart(created);
+    const now = new Date();
+    const currentWeekStart = getWeekStart(now);
+    let best = 0, cur = 0;
+    while (weekStart <= currentWeekStart) {
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      const count = logs.filter(l => {
+        if (l.habitId !== habit.id) return false;
+        const ld = new Date(l.date + 'T00:00:00');
+        return ld >= weekStart && ld <= weekEnd;
+      }).length;
+      const isCurrent = weekStart.getTime() === currentWeekStart.getTime();
+      if (count >= N) {
+        cur++;
+        if (cur > best) best = cur;
+      } else {
+        if (!isCurrent) cur = 0;
+      }
+      weekStart.setDate(weekStart.getDate() + 7);
+    }
+    return best;
+  }
+  const created = new Date(habit.createdAt);
+  const today = new Date();
+  let d = new Date(created);
+  let best = 0, cur = 0;
+  const todayS = todayStr();
+  while (d <= today) {
+    const ds = dateStr(d);
+    if (isHabitScheduledOnDate(habit, d)) {
+      const isLogged = logs.some(l => l.habitId === habit.id && l.date === ds);
+      if (isLogged) {
+        cur++;
+        if (cur > best) best = cur;
+      } else {
+        if (ds !== todayS) cur = 0;
+      }
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return best;
+}
+// ============= ЭКРАН ИСТОРИИ =============
+function renderHistory() {
+  const habits = getHabits();
+  if (habits.length === 0) {
+    document.getElementById('habit-chips').innerHTML = '';
+    document.getElementById('calendar-grid').innerHTML = '<div class="empty-state"><p>Сначала создайте привычку</p></div>';
+    document.getElementById('month-pct').textContent = '0%';
+    document.getElementById('current-month').textContent = '';
+    return;
+  }
+  if (!activeHistoryHabitId || !habits.find(h => h.id === activeHistoryHabitId)) {
+    activeHistoryHabitId = habits[0].id;
+  }
+  const chipsHtml = habits.filter(h => !h.archived).map(h => `
+    <div class="habit-chip ${h.id === activeHistoryHabitId ? 'active' : ''}" data-habit-id="${h.id}">
+      <div class="dot" style="background:${h.color}"></div>
+      ${escapeHtml(h.name)}
+    </div>`).join('');
+  document.getElementById('habit-chips').innerHTML = chipsHtml;
+  document.querySelectorAll('.habit-chip').forEach(c => {
+    c.onclick = () => { activeHistoryHabitId = c.dataset.habitId; renderHistory(); };
+  });
+  const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  document.getElementById('current-month').textContent = `${monthNames[historyMonth]} ${historyYear}`;
+  renderCalendar();
+  calcMonthPct();
+}
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  const habit = getHabits().find(h => h.id === activeHistoryHabitId);
+  if (!habit) { grid.innerHTML = ''; return; }
+  const logs = getLogs();
+  const notes = getNotes();
+  const firstDay = new Date(historyYear, historyMonth, 1);
+  const lastDay = new Date(historyYear, historyMonth + 1, 0);
+  const dayHeaders = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  let html = dayHeaders.map(d => `<div class="day-header">${d}</div>`).join('');
+  for (let i = 0; i < firstDay.getDay(); i++) html += '<div class="day empty"></div>';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const dateObj = new Date(historyYear, historyMonth, d);
+    dateObj.setHours(0, 0, 0, 0);
+    const ds = dateStr(dateObj);
+    const isToday = dateObj.getTime() === today.getTime();
+    const isFuture = dateObj > today;
+    const hasLog = logs.some(l => l.habitId === habit.id && l.date === ds);
+    const hasNote = notes.some(n => n.habitId === habit.id && n.date === ds);
+    let classes = 'day';
+    if (isToday) classes += ' today';
+    if (isFuture) classes += ' future';
+    if (hasLog) classes += ' completed';
+    if (hasNote && !hasLog) classes += ' note-only';
+    if (hasNote) classes += ' has-note';
+    const styleAttr = hasLog ? `style="background:${habit.color};"` : '';
+    html += `<div class="${classes}" data-date="${ds}" ${styleAttr}>${d}</div>`;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.day:not(.empty)').forEach(el => {
+    el.onclick = () => openNoteModal(activeHistoryHabitId, el.dataset.date);
+  });
+}
+function calcMonthPct() {
+  const habit = getHabits().find(h => h.id === activeHistoryHabitId);
+  if (!habit) { document.getElementById('month-pct').textContent = '0%'; return; }
+  const logs = getLogs();
+  const lastDay = new Date(historyYear, historyMonth + 1, 0).getDate();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let scheduled = 0, completed = 0;
+  if (habit.frequency.type === 'times_week') {
+    const weeks = [];
+    for (let d = 1; d <= lastDay; d++) {
+      const dateObj = new Date(historyYear, historyMonth, d);
+      dateObj.setHours(0, 0, 0, 0);
+      const ws = getWeekStart(dateObj);
+      const key = ws.toISOString().split('T')[0];
+      if (!weeks.find(w => w.key === key)) weeks.push({ key, start: ws, dates: [] });
+      weeks.find(w => w.key === key).dates.push(dateObj);
+    }
+    const N = habit.frequency.times || 1;
+    for (const w of weeks) {
+      const count = w.dates.filter(d => {
+        const ds = dateStr(d);
+        return logs.some(l => l.habitId === habit.id && l.date === ds);
+      }).length;
+      const isCurrent = w.dates.some(d => d > today);
+      if (isCurrent && count < N) continue;
+      scheduled++;
+      if (count >= N) completed++;
+    }
+  } else {
+    for (let d = 1; d <= lastDay; d++) {
+      const dateObj = new Date(historyYear, historyMonth, d);
+      dateObj.setHours(0, 0, 0, 0);
+      if (!isHabitScheduledOnDate(habit, dateObj)) continue;
+      if (dateObj > today) continue;
+      const ds = dateStr(dateObj);
+      scheduled++;
+      if (logs.some(l => l.habitId === habit.id && l.date === ds)) completed++;
+    }
+  }
+  const pct = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
+  document.getElementById('month-pct').textContent = pct + '%';
+}
+document.getElementById('prev-month').onclick = () => {
+  historyMonth--;
+  if (historyMonth < 0) { historyMonth = 11; historyYear--; }
+  renderHistory();
+};
+document.getElementById('next-month').onclick = () => {
+  historyMonth++;
+  if (historyMonth > 11) { historyMonth = 0; historyYear++; }
+  renderHistory();
+};
+// ============= ЭКРАН ПРИВЫЧЕК =============
+function renderHabits() {
+  const habits = getHabits();
+  const active = habits.filter(h => !h.archived);
+  const archived = habits.filter(h => h.archived);
+  const logs = getLogs();
+  const freqLabel = (h) => {
+    if (h.frequency.type === 'daily') return 'Каждый день';
+    if (h.frequency.type === 'weekdays') {
+      const names = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+      return h.frequency.days.map(d => names[d]).join(', ');
+    }
+    if (h.frequency.type === 'times_week') return `${h.frequency.times} раз в неделю`;
+    return '';
+  };
+  document.getElementById('active-habits-list').innerHTML = active.map(h => {
+    const streak = calcCurrentStreak(h, logs);
+    const best = calcBestStreak(h, logs);
+    return `
+      <div class="habit-list-item" data-habit-id="${h.id}">
+        <div class="habit-color-dot" style="background:${h.color}"></div>
+        <div class="info">
+          <div class="name">${escapeHtml(h.name)} ${getAchievementBadge(streak)}</div>
+          <div class="freq">${freqLabel(h)} ${h.reminder ? '\u00B7 \u23F0 ' + h.reminder : ''}</div>
+          <div class="freq">\u{1F525} ${streak} \u00B7 \u2605 ${best}</div>
+        </div>
+      </div>`;
+  }).join('') || '<div class="empty-state"><div class="emoji">\u{1F4CB}</div><p>Пока нет привычек. Нажмите +</p></div>';
+  document.getElementById('archived-section').classList.toggle('hidden', archived.length === 0);
+  document.getElementById('archived-habits-list').innerHTML = archived.map(h => `
+    <div class="habit-list-item" data-habit-id="${h.id}">
+      <div class="habit-color-dot" style="background:${h.color};opacity:0.4"></div>
+      <div class="info">
+        <div class="name" style="opacity:0.6">${escapeHtml(h.name)}</div>
+        <div class="freq">В архиве</div>
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('.habit-list-item').forEach(el => {
+    el.onclick = () => openHabitDetail(el.dataset.habitId);
+  });
+}
+// ============= ДЕТАЛЬ ПРИВЫЧЕК =============
+function openHabitDetail(habitId) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-detail').classList.add('active');
+  document.getElementById('screen-title').textContent = 'Привычка';
+  document.getElementById('add-habit-fab').style.display = 'none';
+  const habit = getHabits().find(h => h.id === habitId);
+  if (!habit) { renderHabits(); return; }
+  const logs = getLogs();
+  const notes = getNotes();
+  const streak = calcCurrentStreak(habit, logs);
+  const best = calcBestStreak(habit, logs);
+  const freqLabel = (h) => {
+    if (h.frequency.type === 'daily') return 'Каждый день';
+    if (h.frequency.type === 'weekdays') {
+      const names = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+      return h.frequency.days.map(d => names[d]).join(', ');
+    }
+    if (h.frequency.type === 'times_week') return `${h.frequency.times} раз в неделю`;
+    return '';
+  };
+  const habitNotes = notes.filter(n => n.habitId === habitId).sort((a,b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const achievementBadge = getAchievementBadge(streak);
+  document.getElementById('detail-content').innerHTML = `
+    <div class="detail-card">
+      <div class="detail-title">
+        <div class="habit-color-dot" style="background:${habit.color};width:20px;height:20px"></div>
+        ${escapeHtml(habit.name)} ${achievementBadge}
+      </div>
+      <div class="detail-meta">
+        ${freqLabel(habit)}<br>
+        ${habit.reminder ? '\u23F0 Напоминание: ' + habit.reminder : 'Без напоминания'}<br>
+        ${habit.archived ? '\u{1F4CB} В архиве' : '\u2705 Активна'}
+      </div>
+      <div class="detail-stats">
+        <div class="detail-stat">
+          <div class="num gold">${streak}</div>
+          <div class="lbl">Текущая серия</div>
+        </div>
+        <div class="detail-stat">
+          <div class="num purple">${best}</div>
+          <div class="lbl">Лучшая серия</div>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <button onclick="openHabitModal('${habit.id}')">\u270E Редактировать</button>
+        <button class="archive-btn" onclick="toggleArchive('${habit.id}')">${habit.archived ? '\u21A9 Разархивировать' : '\u2B07 Архивировать'}</button>
+        <button class="delete-btn" onclick="confirmDelete('${habit.id}')">\u{1F5D1} Удалить</button>
+      </div>
+    </div>
+    <div class="detail-card detail-notes">
+      <h4>Заметки</h4>
+      <p class="note-hint">Кликните на день в календаре истории, чтобы добавить заметку к любой дате — прошлой или будущей.</p>
+      ${habitNotes.length > 0 ? habitNotes.map(n => `
+        <div class="note-item">
+          <div class="date">${formatDate(n.date)}</div>
+          <div class="text">${escapeHtml(n.text)}</div>
+        </div>`).join('') : '<p style="font-size:0.85rem;color:var(--text-muted);">Пока нет заметок</p>'}
+    </div>`;
+  document.getElementById('detail-back').onclick = () => {
+    document.querySelector('.nav-btn[data-screen="habits"]').click();
+  };
+}
+function toggleArchive(habitId) {
+  const habits = getHabits();
+  const h = habits.find(h => h.id === habitId);
+  if (h) { h.archived = !h.archived; saveHabits(habits); }
+  openHabitDetail(habitId);
+}
+function confirmDelete(habitId) {
+  const habit = getHabits().find(h => h.id === habitId);
+  document.getElementById('confirm-title').textContent = 'Удалить привычку?';
+  document.getElementById('confirm-text').textContent = `«${habit.name}» будет удалена вместе со всеми отметками и заметками. Это нельзя отменить.`;
+  document.getElementById('confirm-modal').classList.remove('hidden');
+  confirmCallback = () => {
+    let habits = getHabits().filter(h => h.id !== habitId);
+    saveHabits(habits);
+    let logs = getLogs().filter(l => l.habitId !== habitId);
+    saveLogs(logs);
+    let notes = getNotes().filter(n => n.habitId !== habitId);
+    saveNotes(notes);
+    document.getElementById('confirm-modal').classList.add('hidden');
+    document.querySelector('.nav-btn[data-screen="habits"]').click();
+    showToast('Привычка удалена');
+  };
+}
+document.getElementById('confirm-cancel').onclick = () => {
+  document.getElementById('confirm-modal').classList.add('hidden');
+  confirmCallback = null;
+};
+document.getElementById('confirm-ok').onclick = () => { if (confirmCallback) confirmCallback(); };
+function openHabitModal(habitId) {
+  editingHabitId = habitId || null;
+  document.getElementById('habit-modal-title').textContent = habitId ? 'Редактировать привычку' : 'Новая привычка';
+  const habit = habitId ? getHabits().find(h => h.id === habitId) : null;
+  document.getElementById('habit-name').value = habit ? habit.name : '';
+  document.getElementById('habit-reminder').value = habit ? (habit.reminder || '') : '';
+  selectedFreq = habit ? habit.frequency.type : 'daily';
+  selectedColor = habit ? habit.color : COLORS[0];
+  selectedDays = habit && habit.frequency.days ? [...habit.frequency.days] : [];
+  document.getElementById('color-picker').innerHTML = COLORS.map(c =>
+    `<div class="color-swatch ${c === selectedColor ? 'active' : ''}" style="background:${c}" data-color="${c}"></div>`
+  ).join('');
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.onclick = () => {
+      selectedColor = s.dataset.color;
+      document.querySelectorAll('.color-swatch').forEach(sw => sw.classList.remove('active'));
+      s.classList.add('active');
+    };
+  });
+  document.querySelectorAll('.freq-option').forEach(o => {
+    o.classList.toggle('active', o.dataset.freq === selectedFreq);
+  });
+  updateFreqUI();
+  const wdNames = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const wdPicker = document.getElementById('weekday-picker');
+  wdPicker.innerHTML = wdNames.map((n, i) =>
+    `<button class="weekday-btn ${selectedDays.includes(i) ? 'active' : ''}" data-day="${i}">${n}</button>`
+  ).join('');
+  wdPicker.querySelectorAll('.weekday-btn').forEach(b => {
+    b.onclick = () => {
+      const day = parseInt(b.dataset.day);
+      if (selectedDays.includes(day)) selectedDays = selectedDays.filter(d => d !== day);
+      else selectedDays.push(day);
+      b.classList.toggle('active');
+    };
+  });
+  if (habit && habit.frequency.type === 'times_week') {
+    document.getElementById('times-per-week').value = habit.frequency.times || 3;
+  }
+  document.getElementById('habit-modal').classList.remove('hidden');
+}
+function updateFreqUI() {
+  document.querySelectorAll('.freq-option').forEach(o => {
+    o.classList.toggle('active', o.dataset.freq === selectedFreq);
+  });
+  document.getElementById('weekday-picker').classList.toggle('hidden', selectedFreq !== 'weekdays');
+  document.getElementById('times-week-input').classList.toggle('hidden', selectedFreq !== 'times_week');
+}
+document.querySelectorAll('.freq-option').forEach(o => {
+  o.onclick = () => { selectedFreq = o.dataset.freq; updateFreqUI(); };
+});
+document.getElementById('habit-cancel').onclick = () => { document.getElementById('habit-modal').classList.add('hidden'); };
+document.getElementById('habit-save').onclick = () => {
+  const name = document.getElementById('habit-name').value.trim();
+  if (!name) { showToast('Введите название'); return; }
+  if (selectedFreq === 'weekdays' && selectedDays.length === 0) { showToast('Выберите дни недели'); return; }
+  const reminder = document.getElementById('habit-reminder').value || null;
+  let habits = getHabits();
+  const freq = { type: selectedFreq };
+  if (selectedFreq === 'weekdays') freq.days = selectedDays.sort();
+  if (selectedFreq === 'times_week') {
+    const times = parseInt(document.getElementById('times-per-week').value) || 1;
+    freq.times = Math.max(1, Math.min(7, times));
+  }
+  if (editingHabitId) {
+    const h = habits.find(h => h.id === editingHabitId);
+    h.name = name; h.color = selectedColor; h.frequency = freq; h.reminder = reminder;
+    saveHabits(habits);
+    showToast('Сохранено');
+  } else {
+    habits.push({ id: uid(), name, color: selectedColor, frequency: freq, reminder, archived: false, createdAt: todayStr() });
+    saveHabits(habits);
+    showToast('Привычка создана! Время начинать!', 'reward');
+  }
+  document.getElementById('habit-modal').classList.add('hidden');
+  const activeScreen = document.querySelector('.screen.active').id;
+  if (activeScreen === 'screen-detail' && editingHabitId) openHabitDetail(editingHabitId);
+  else if (activeScreen === 'screen-habits') renderHabits();
+  else renderToday();
+};
+document.getElementById('add-habit-fab').onclick = () => openHabitModal(null);
+function openNoteModal(habitId, ds) {
+  noteContext = { habitId, date: ds };
+  document.getElementById('note-date-display').textContent = formatDate(ds);
+  const notes = getNotes();
+  const existing = notes.find(n => n.habitId === habitId && n.date === ds);
+  document.getElementById('note-text').value = existing ? existing.text : '';
+  document.getElementById('note-modal').classList.remove('hidden');
+}
+document.getElementById('note-cancel').onclick = () => { document.getElementById('note-modal').classList.add('hidden'); };
+document.getElementById('note-save').onclick = () => {
+  const text = document.getElementById('note-text').value.trim();
+  let notes = getNotes();
+  const { habitId, date } = noteContext;
+  const idx = notes.findIndex(n => n.habitId === habitId && n.date === date);
+  if (text === '') {
+    notes = notes.filter(n => !(n.habitId === habitId && n.date === date));
+  } else if (idx >= 0) {
+    notes[idx].text = text;
+  } else {
+    notes.push({ habitId, date, text });
+  }
+  saveNotes(notes);
+  document.getElementById('note-modal').classList.add('hidden');
+  showToast('Заметка сохранена');
+  if (document.getElementById('screen-history').classList.contains('active')) renderCalendar();
+  if (document.getElementById('screen-detail').classList.contains('active')) openHabitDetail(habitId);
+};
+// ============= КОНФЕТТИ =============
+function launchConfetti() {
+  const colors = ['#48bb78', '#4299e1', '#ed8936', '#ecc94b', '#9f7aea', '#f56565'];
+  for (let i = 0; i < 40; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.top = '-10px';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(piece);
+    const dx = (Math.random() - 0.5) * 300;
+    const dy = window.innerHeight + 50;
+    const rot = Math.random() * 720;
+    piece.animate([
+      { transform: `translate(0,0) rotate(0deg)`, opacity: 1 },
+      { transform: `translate(${dx}px,${dy}px) rotate(${rot}deg)`, opacity: 0 }
+    ], { duration: 2000 + Math.random() * 1000, easing: 'cubic-bezier(0.2,0.6,0.4,1)' });
+    setTimeout(() => piece.remove(), 3000);
+  }
+}
+function formatDate(ds) {
+  const d = new Date(ds + 'T00:00:00');
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show' + (type === 'reward' ? ' reward' : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
+}
+initAuth();
+</script>
+</body>
+</html>
